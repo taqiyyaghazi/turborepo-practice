@@ -1,0 +1,80 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main # Silakan sesuaikan dengan nama branch utama Anda (misalnya: master)
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+      web: ${{ steps.filter.outputs.web }}
+      packages: ${{ steps.filter.outputs.packages }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Menggunakan path filter untuk mendeteksi perubahan di direktori tertentu
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            docs:
+              - 'apps/docs/**'
+            web:
+              - 'apps/web/**'
+            packages:
+              - 'packages/**'
+
+  deploy-docs:
+    needs: detect-changes
+    # Deploy docs berjalan jika ada perubahan di apps/docs ATAU directory packages
+    if: ${{ needs.detect-changes.outputs.docs == 'true' || needs.detect-changes.outputs.packages == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_DOCS }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${VERCEL_TOKEN}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${VERCEL_TOKEN}
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${VERCEL_TOKEN}
+
+  deploy-web:
+    needs: detect-changes
+    # Deploy web berjalan jika ada perubahan di apps/web ATAU directory packages
+    if: ${{ needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.packages == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_WEB }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${VERCEL_TOKEN}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${VERCEL_TOKEN}
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${VERCEL_TOKEN}
