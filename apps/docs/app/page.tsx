@@ -38,7 +38,7 @@ export default function Home() {
           <li>Save and see your changes instantly.</li>
         </ol>
 
-        Test Perubahan 1
+        Test Perubahan 2
 
         <div className={styles.ctas}>
           <a
